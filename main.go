@@ -15,6 +15,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 )
 
 const (
@@ -23,6 +24,7 @@ const (
 
 var (
 	clusterDomain string
+	namespace     string
 	httpAddr      string
 )
 
@@ -31,9 +33,16 @@ func main() {
 	flag.StringVar(&httpAddr, "http", "127.0.0.1:8080", "The HTTP listen address.")
 	flag.Parse()
 
+	// POD_NAMESPACE env var should be set in container spec via downward API
+	namespace := os.Getenv("POD_NAMESPACE")
+	if namespace == "" {
+		log.Println("POD_NAMESPACE must be set in environment")
+		os.Exit(2)
+	}
+
 	log.Println("Starting the Kubernetes Envoy SDS Service...")
 	log.Printf("Listening on %s...", httpAddr)
 
-	http.Handle("/v1/registration/", registrationServer(clusterDomain))
+	http.Handle("/v1/registration/", registrationServer(clusterDomain, namespace))
 	log.Fatal(http.ListenAndServe(httpAddr, nil))
 }

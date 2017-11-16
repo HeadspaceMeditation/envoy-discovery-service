@@ -1,3 +1,3 @@
 FROM scratch
-ADD kubernetes-envoy-sds /kubernetes-envoy-sds
-ENTRYPOINT ["/kubernetes-envoy-sds"]
+ADD envoy-discovery-service /envoy-discovery-service
+ENTRYPOINT ["/envoy-discovery-service"]

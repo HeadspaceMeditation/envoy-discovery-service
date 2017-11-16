@@ -1,5 +1,5 @@
 #! /bin/bash
 ./build
-docker build -t gcr.io/hightowerlabs/kubernetes-envoy-sds:0.0.1 .
-gcloud docker -- push gcr.io/hightowerlabs/kubernetes-envoy-sds:0.0.1
-rm kubernetes-envoy-sds
+docker build -t headspace/envoy-discovery-service:$TAG .
+docker push headspace/envoy-discovery-service:$TAG
+rm envoy-discovery-service

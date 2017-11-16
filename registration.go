@@ -13,32 +13,17 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strings"
 )
 
 type registrationHandler struct {
 	clusterDomain string
+	namespace     string
 }
 
-func registrationServer(clusterDomain string) http.Handler {
-	return &registrationHandler{clusterDomain}
-}
-
-func extractServiceNamespace(service, clusterDomain string) (string, string) {
-	if !strings.HasSuffix(service, clusterDomain) {
-		return "", ""
-	}
-	s := strings.TrimSuffix(service, clusterDomain)
-	s = strings.TrimSuffix(s, ".")
-	hs := strings.Split(s, ".")
-
-	if len(hs) != 2 {
-		return "", ""
-	}
-
-	return hs[0], hs[1]
+func registrationServer(clusterDomain string, namespace string) http.Handler {
+	return &registrationHandler{clusterDomain, namespace}
 }
 
 func (h *registrationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -47,20 +32,9 @@ func (h *registrationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	s := serviceFromURL(r.URL.Path)
-	if s == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	service := serviceFromURL(r.URL.Path)
 
-	service, namespace := extractServiceNamespace(s, h.clusterDomain)
-	if namespace == "" {
-		log.Printf("Invalid service name: %s. Must be FQDN (service.namespace.%s)", service, h.clusterDomain)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	sds, err := getService(namespace, service)
+	sds, err := getService(h.namespace, service)
 	if err != nil {
 		w.WriteHeader(500)
 		return
