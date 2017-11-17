@@ -45,10 +45,10 @@ type Cluster struct {
 	Features string `json:"features,omitempty"`
 }
 
-func getServices(namespace string) (*Services, error) {
+func getServices(namespace string, serviceLabelSelector string) (*Services, error) {
 	path := fmt.Sprintf(servicesPath, namespace)
 	query := url.Values{}
-	query.Set("labelSelector", "tier=microservices")
+	query.Set("labelSelector", serviceLabelSelector)
 
 	r := &http.Request{
 		Header: make(http.Header),

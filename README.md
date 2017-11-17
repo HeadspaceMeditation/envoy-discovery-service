@@ -7,11 +7,30 @@ The variable POD_NAMESPACE should be set in the environment via the [Downward AP
 ## Usage
 
 ```
-kubernetes-envoy-sds -h
+envoy-discovery-service -h
 ```
 
 ```
-Usage of kubernetes-envoy-sds:
+Usage of envoy-discovery-service:
   -http string
-    	The HTTP listen address. (default "127.0.0.1:8080")
+    	The HTTP listen address (default "127.0.0.1:8080")
+  -service-label-selector string
+    	The label selector to filter services for CDS (default "envoyTier=ingress")
+```
+
+## Building
+
+Local testing:
+
+```bash
+$ GOOS=darwin ./build
+$ kubectl proxy --port=8001
+$ POD_NAMESPACE=alpha ./envoy-discovery-service -http 127.0.0.1:8081
+```
+
+Pushing new image:
+
+
+```bash
+$ TAG=X.X.X ./build-container
 ```

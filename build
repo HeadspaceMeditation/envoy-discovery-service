@@ -1,3 +1,4 @@
 #! /bin/bash
-GOOS=${GOOS:-linux}
+export GOOS=${GOOS:-linux}
+export GOARCH=${GOARCH:-amd64}
 go build -a --ldflags '-extldflags "-static"' -tags netgo -installsuffix netgo -o envoy-discovery-service .

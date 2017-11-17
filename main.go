@@ -24,11 +24,13 @@ const (
 )
 
 var (
-	httpAddr string
+	httpAddr             string
+	serviceLabelSelector string
 )
 
 func main() {
-	flag.StringVar(&httpAddr, "http", "127.0.0.1:8080", "The HTTP listen address.")
+	flag.StringVar(&httpAddr, "http", "127.0.0.1:8080", "The HTTP listen address")
+	flag.StringVar(&serviceLabelSelector, "service-label-selector", "envoyTier=ingress", "The label selector to filter services for CDS")
 	flag.Parse()
 
 	// POD_NAMESPACE env var should be set in container spec via downward API
@@ -38,11 +40,10 @@ func main() {
 		os.Exit(2)
 	}
 
-	log.Println("Starting the Kubernetes Envoy CDS Service...")
-	log.Println("Starting the Kubernetes Envoy SDS Service...")
+	log.Println("Starting the Kubernetes Envoy Discovery Service...")
 	log.Printf("Listening on %s...", httpAddr)
 
-	http.Handle("/v1/clusters/", clusterServer(namespace))
+	http.Handle("/v1/clusters/", clusterServer(namespace, serviceLabelSelector))
 	http.Handle("/v1/registration/", registrationServer(namespace))
 	log.Fatal(http.ListenAndServe(httpAddr, nil))
 }
