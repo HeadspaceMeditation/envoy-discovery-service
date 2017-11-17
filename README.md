@@ -1,6 +1,6 @@
 # Kubernetes Envoy Service Discovery Service
 
-The `envoy-discovery-service` service implements the [Envoy Service Discovery REST API](https://lyft.github.io/envoy/docs/configuration/cluster_manager/sds_api.html) on top of the [Kubernetes Services API](https://kubernetes.io/docs/concepts/services-networking/service).
+The `envoy-discovery-service` service implements the [Envoy Service Discovery REST API](https://lyft.github.io/envoy/docs/configuration/cluster_manager/sds_api.html) and [Envoy Cluster Discovery REST API](https://www.envoyproxy.io/docs/envoy/latest/configuration/cluster_manager/cds#config-cluster-manager-cds-api) on top of the [Kubernetes Services API](https://kubernetes.io/docs/concepts/services-networking/service).
 
 The variable POD_NAMESPACE should be set in the environment via the [Downward API](https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#the-downward-api). Each Kubernetes service can then be referenced by its unqualified name.
 
