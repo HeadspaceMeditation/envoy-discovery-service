@@ -50,7 +50,7 @@ type Tags struct {
 	LoadBalancingWeight int32 `json:"load_balancing_weight,omitempty"`
 }
 
-func getService(namespace, name string) (*Service, error) {
+func getService(namespace string, name string) (*Service, error) {
 	path := fmt.Sprintf(endpointsPath, namespace, name)
 
 	r := &http.Request{
@@ -95,40 +95,4 @@ func getService(namespace, name string) (*Service, error) {
 	}
 
 	return &Service{Hosts: hosts}, nil
-}
-
-type object struct {
-	Object endpoints `json:"object"`
-	Type   string    `json:"type"`
-}
-
-type endpoints struct {
-	Kind       string   `json:"kind"`
-	ApiVersion string   `json:"apiVersion"`
-	Metadata   metadata `json:"metadata"`
-	Subsets    []subset `json:"subsets"`
-	Message    string   `json:"message"`
-}
-
-type metadata struct {
-	Name string `json:"name"`
-}
-
-type subset struct {
-	Addresses []address `json:"addresses"`
-	Ports     []port    `json:"ports"`
-}
-
-type address struct {
-	IP string `json:"ip"`
-}
-
-type port struct {
-	Name string `json:"name"`
-	Port int32  `json:"port"`
-}
-
-type status struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
 }

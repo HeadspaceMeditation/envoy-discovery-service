@@ -18,12 +18,11 @@ import (
 )
 
 type registrationHandler struct {
-	clusterDomain string
-	namespace     string
+	namespace string
 }
 
-func registrationServer(clusterDomain string, namespace string) http.Handler {
-	return &registrationHandler{clusterDomain, namespace}
+func registrationServer(namespace string) http.Handler {
+	return &registrationHandler{namespace}
 }
 
 func (h *registrationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

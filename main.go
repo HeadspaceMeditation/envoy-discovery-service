@@ -20,16 +20,14 @@ import (
 
 const (
 	endpointsPath = "/api/v1/namespaces/%s/endpoints/%s"
+	servicesPath  = "/api/v1/namespaces/%s/services"
 )
 
 var (
-	clusterDomain string
-	namespace     string
-	httpAddr      string
+	httpAddr string
 )
 
 func main() {
-	flag.StringVar(&clusterDomain, "cluster-domain", "svc.cluster.local", "The cluster domain")
 	flag.StringVar(&httpAddr, "http", "127.0.0.1:8080", "The HTTP listen address.")
 	flag.Parse()
 
@@ -40,9 +38,11 @@ func main() {
 		os.Exit(2)
 	}
 
+	log.Println("Starting the Kubernetes Envoy CDS Service...")
 	log.Println("Starting the Kubernetes Envoy SDS Service...")
 	log.Printf("Listening on %s...", httpAddr)
 
-	http.Handle("/v1/registration/", registrationServer(clusterDomain, namespace))
+	http.Handle("/v1/clusters/", clusterServer(namespace))
+	http.Handle("/v1/registration/", registrationServer(namespace))
 	log.Fatal(http.ListenAndServe(httpAddr, nil))
 }
