@@ -16,6 +16,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type registrationHandler struct {
@@ -28,6 +29,8 @@ func registrationServer(kubeProxyEndpoint string, namespace string) http.Handler
 }
 
 func (h *registrationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -49,6 +52,9 @@ func (h *registrationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	w.Write(data)
+
+	elapsed := time.Since(start)
+	log.Printf("%s %s", r.URL.Path, elapsed)
 }
 
 func serviceFromURL(path string) string {
