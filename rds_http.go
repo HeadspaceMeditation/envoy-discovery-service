@@ -7,17 +7,17 @@ import (
 	"time"
 )
 
-type clusterHandler struct {
+type routeHandler struct {
 	kubeProxyEndpoint    string
 	namespace            string
 	serviceLabelSelector string
 }
 
-func clusterServer(kubeProxyEndpoint string, namespace string, serviceLabelSelector string) http.Handler {
-	return &clusterHandler{kubeProxyEndpoint, namespace, serviceLabelSelector}
+func routeServer(kubeProxyEndpoint string, namespace string, serviceLabelSelector string) http.Handler {
+	return &routeHandler{kubeProxyEndpoint, namespace, serviceLabelSelector}
 }
 
-func (h *clusterHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *routeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
 	if r.Method != http.MethodGet {
@@ -25,18 +25,18 @@ func (h *clusterHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cs, err := getServices(h.kubeProxyEndpoint, h.namespace, serviceLabelSelector)
+	rs, err := getRoutes(h.kubeProxyEndpoint, h.namespace, serviceLabelSelector)
 	if err != nil {
 		log.Printf("verbose error info: %#v", err)
-		log.Println(cs)
+		log.Println(rs)
 		w.WriteHeader(500)
 		return
 	}
 
-	data, err := json.MarshalIndent(cs, "", "  ")
+	data, err := json.MarshalIndent(rs, "", "  ")
 	if err != nil {
 		log.Printf("verbose error info: %#v", err)
-		log.Println(cs)
+		log.Println(rs)
 		w.WriteHeader(500)
 		return
 	}

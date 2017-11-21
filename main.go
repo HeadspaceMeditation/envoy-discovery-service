@@ -47,5 +47,6 @@ func main() {
 
 	http.Handle("/v1/clusters/", clusterServer(kubeProxyEndpoint, namespace, serviceLabelSelector))
 	http.Handle("/v1/registration/", registrationServer(kubeProxyEndpoint, namespace))
+	http.Handle("/v1/routes/", routeServer(kubeProxyEndpoint, namespace, serviceLabelSelector))
 	log.Fatal(http.ListenAndServe(httpAddr, nil))
 }
