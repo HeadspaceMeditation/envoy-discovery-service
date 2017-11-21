@@ -13,16 +13,18 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 )
 
 type registrationHandler struct {
-	namespace string
+	kubeProxyEndpoint string
+	namespace         string
 }
 
-func registrationServer(namespace string) http.Handler {
-	return &registrationHandler{namespace}
+func registrationServer(kubeProxyEndpoint string, namespace string) http.Handler {
+	return &registrationHandler{kubeProxyEndpoint, namespace}
 }
 
 func (h *registrationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -33,14 +35,16 @@ func (h *registrationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	service := serviceFromURL(r.URL.Path)
 
-	sds, err := getService(h.namespace, service)
+	sds, err := getService(h.kubeProxyEndpoint, h.namespace, service)
 	if err != nil {
+		log.Printf(err.Error())
 		w.WriteHeader(500)
 		return
 	}
 
 	data, err := json.MarshalIndent(sds, "", "  ")
 	if err != nil {
+		log.Printf(err.Error())
 		w.WriteHeader(500)
 		return
 	}

@@ -50,14 +50,14 @@ type Tags struct {
 	LoadBalancingWeight int32 `json:"load_balancing_weight,omitempty"`
 }
 
-func getService(namespace string, name string) (*Service, error) {
+func getService(kubeProxyEndpoint string, namespace string, name string) (*Service, error) {
 	path := fmt.Sprintf(endpointsPath, namespace, name)
 
 	r := &http.Request{
 		Header: make(http.Header),
 		Method: http.MethodGet,
 		URL: &url.URL{
-			Host:   "127.0.0.1:8001",
+			Host:   kubeProxyEndpoint,
 			Path:   path,
 			Scheme: "http",
 		},

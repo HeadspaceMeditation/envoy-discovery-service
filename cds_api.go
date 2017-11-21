@@ -45,7 +45,7 @@ type Cluster struct {
 	Features string `json:"features,omitempty"`
 }
 
-func getServices(namespace string, serviceLabelSelector string) (*Services, error) {
+func getServices(kubeProxyEndpoint string, namespace string, serviceLabelSelector string) (*Services, error) {
 	path := fmt.Sprintf(servicesPath, namespace)
 	query := url.Values{}
 	query.Set("labelSelector", serviceLabelSelector)
@@ -54,7 +54,7 @@ func getServices(namespace string, serviceLabelSelector string) (*Services, erro
 		Header: make(http.Header),
 		Method: http.MethodGet,
 		URL: &url.URL{
-			Host:     "127.0.0.1:8001",
+			Host:     kubeProxyEndpoint,
 			Path:     path,
 			Scheme:   "http",
 			RawQuery: query.Encode(),

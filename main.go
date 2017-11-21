@@ -25,11 +25,13 @@ const (
 
 var (
 	httpAddr             string
+	kubeProxyEndpoint    string
 	serviceLabelSelector string
 )
 
 func main() {
 	flag.StringVar(&httpAddr, "http", "127.0.0.1:8080", "The HTTP listen address")
+	flag.StringVar(&kubeProxyEndpoint, "kube-proxy-endpoint", "127.0.0.1:9090", "A kubectl reverse-proxy URL")
 	flag.StringVar(&serviceLabelSelector, "service-label-selector", "envoyTier=ingress", "The label selector to filter services for CDS")
 	flag.Parse()
 
@@ -43,7 +45,7 @@ func main() {
 	log.Println("Starting the Kubernetes Envoy Discovery Service...")
 	log.Printf("Listening on %s...", httpAddr)
 
-	http.Handle("/v1/clusters/", clusterServer(namespace, serviceLabelSelector))
-	http.Handle("/v1/registration/", registrationServer(namespace))
+	http.Handle("/v1/clusters/", clusterServer(kubeProxyEndpoint, namespace, serviceLabelSelector))
+	http.Handle("/v1/registration/", registrationServer(kubeProxyEndpoint, namespace))
 	log.Fatal(http.ListenAndServe(httpAddr, nil))
 }
