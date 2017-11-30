@@ -85,28 +85,32 @@ func getRoutes(kubeProxyEndpoint string, namespace string, serviceLabelSelector 
 		return nil, err
 	}
 
-	vhosts := make([]VirtualHost, 0)
+	routes := make([]Route, 0)
 
 	for _, item := range svcs.Items {
 		// TODO Extract the literal values below into flags and constants
-		vhosts = append(vhosts, VirtualHost{
-			Domains: []string{"*"},
-			Name:    item.Metadata.Name,
-			Routes: []Route{Route{
-				Cluster:   item.Metadata.Name,
-				Prefix:    "/",
-				TimeoutMS: 0,
-				Headers: []Header{Header{
-					Name:  "content-type",
-					Value: "application/grpc",
-				}},
-			}, Route{
-				Cluster:   item.Metadata.Name,
-				Prefix:    fmt.Sprintf("/%s", item.Metadata.Name),
-				TimeoutMS: 0,
+		prefix := fmt.Sprintf("/%s", item.Metadata.Name)
+		// TODO Not every service will have both an http and grpc endpoint
+		routes = append(routes, []Route{Route{
+			Cluster:   item.Metadata.Name,
+			Prefix:    prefix,
+			TimeoutMS: 0,
+			Headers: []Header{Header{
+				Name:  "content-type",
+				Value: "application/grpc",
 			}},
-		})
+		}, Route{
+			Cluster:   item.Metadata.Name,
+			Prefix:    prefix,
+			TimeoutMS: 0,
+		},
+		}...)
 	}
 
-	return &Routes{VirtualHosts: vhosts}, nil
+	return &Routes{VirtualHosts: []VirtualHost{VirtualHost{
+		Domains: []string{"*"},
+		Name:    "egress",
+		// TODO Not every service will have both an http and grpc endpoint
+		Routes: routes}},
+	}, nil
 }

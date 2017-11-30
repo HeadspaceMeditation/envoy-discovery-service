@@ -12,8 +12,6 @@
 package main
 
 import (
-	"encoding/json"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -30,31 +28,8 @@ func registrationServer(kubeProxyEndpoint string, namespace string) http.Handler
 
 func (h *registrationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
-
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	service := serviceFromURL(r.URL.Path)
-
-	sds, err := getService(h.kubeProxyEndpoint, h.namespace, service)
-	if err != nil {
-		log.Printf(err.Error())
-		w.WriteHeader(500)
-		return
-	}
-
-	data, err := json.MarshalIndent(sds, "", "  ")
-	if err != nil {
-		log.Printf(err.Error())
-		w.WriteHeader(500)
-		return
-	}
-	w.Write(data)
-
-	elapsed := time.Since(start)
-	log.Printf("%s %s", r.URL.Path, elapsed)
+	rs, err := getService(h.kubeProxyEndpoint, h.namespace, serviceFromURL(r.URL.Path))
+	serveHTTP(start, rs, err, w, r)
 }
 
 func serviceFromURL(path string) string {
