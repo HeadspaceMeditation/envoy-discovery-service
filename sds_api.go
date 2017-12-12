@@ -62,7 +62,7 @@ func makeHosts(data []byte) (*Service, error) {
 	// port found on the Kubernetes endpoint.
 	// Open questions around named ports and services with multiple ports.
 	subset := eps.Subsets[0]
-	hosts := make([]Host, 0)
+	hosts := make([]Host, 0, len(subset.Addresses))
 	for _, address := range subset.Addresses {
 		hosts = append(hosts, Host{IPAddress: address.IP, Port: subset.Ports[0].Port})
 	}
