@@ -12,11 +12,8 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
 )
 
 // https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/route_config/route_config.html
@@ -54,39 +51,14 @@ type Header struct {
 	Value string `json:"value"`
 }
 
-func getRoutes(kubeProxyEndpoint string, namespace string, serviceLabelSelector string) (*Routes, error) {
-	path := fmt.Sprintf(servicesPath, namespace)
-	query := url.Values{}
-	query.Set("labelSelector", serviceLabelSelector)
-
-	r := &http.Request{
-		Header: make(http.Header),
-		Method: http.MethodGet,
-		URL: &url.URL{
-			Host:     kubeProxyEndpoint,
-			Path:     path,
-			Scheme:   "http",
-			RawQuery: query.Encode(),
-		},
-	}
-
-	r.Header.Set("Accept", "application/json, */*")
-
-	ctx := context.Background()
-	resp, err := http.DefaultClient.Do(r.WithContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
+func makeRoutes(data []byte) (*Routes, error) {
 	var svcs services
-	err = json.NewDecoder(resp.Body).Decode(&svcs)
+	err := json.Unmarshal(data, &svcs)
 	if err != nil {
 		return nil, err
 	}
 
-	routes := make([]Route, 0)
-
+	routes := make([]Route, 0, len(svcs.Items))
 	for _, item := range svcs.Items {
 		// TODO Extract the literal values below into flags and constants
 		prefix := fmt.Sprintf("/%s", item.Metadata.Name)

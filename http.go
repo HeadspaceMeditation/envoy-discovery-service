@@ -1,23 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"time"
+	"net/url"
 )
 
-func serveHTTP(start time.Time, result interface{}, err error, w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	if err != nil {
-		log.Printf("verbose error info: %#v", err)
-		w.WriteHeader(500)
-		return
-	}
+func marshallData(result interface{}, w http.ResponseWriter, r *http.Request) {
 
 	data, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
@@ -26,7 +19,41 @@ func serveHTTP(start time.Time, result interface{}, err error, w http.ResponseWr
 		return
 	}
 	w.Write(data)
+}
 
-	elapsed := time.Since(start)
-	log.Printf("%s %s", r.URL.Path, elapsed)
+func makeRequest(path, kubeProxyEndpoint, namespace, serviceLabelSelector string) ([]byte, error) {
+	query := url.Values{}
+	// Kinda hacky, but oh well...
+	if endpointsPath == path {
+		path = fmt.Sprintf(path, namespace, serviceLabelSelector)
+	} else {
+		query.Set("labelSelector", serviceLabelSelector)
+		path = fmt.Sprintf(path, namespace)
+	}
+
+	r := &http.Request{
+		Header: make(http.Header),
+		Method: http.MethodGet,
+		URL: &url.URL{
+			Host:     kubeProxyEndpoint,
+			Path:     path,
+			Scheme:   "http",
+			RawQuery: query.Encode(),
+		},
+	}
+
+	r.Header.Set("Accept", "application/json, */*")
+
+	ctx := context.Background()
+	resp, err := http.DefaultClient.Do(r.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+
+	return ioutil.ReadAll(resp.Body)
 }

@@ -12,11 +12,8 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
-	"net/http"
-	"net/url"
+	"strings"
 )
 
 type Service struct {
@@ -50,38 +47,13 @@ type Tags struct {
 	LoadBalancingWeight int32 `json:"load_balancing_weight,omitempty"`
 }
 
-func getService(kubeProxyEndpoint string, namespace string, name string) (*Service, error) {
-	path := fmt.Sprintf(endpointsPath, namespace, name)
-
-	r := &http.Request{
-		Header: make(http.Header),
-		Method: http.MethodGet,
-		URL: &url.URL{
-			Host:   kubeProxyEndpoint,
-			Path:   path,
-			Scheme: "http",
-		},
-	}
-
-	r.Header.Set("Accept", "application/json, */*")
-
-	ctx := context.Background()
-	resp, err := http.DefaultClient.Do(r.WithContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	hosts := make([]Host, 0)
-
-	// If the service does not exist in Kubernetes return an empty
-	// list of hosts.
-	if resp.StatusCode == 404 {
-		return &Service{Hosts: hosts}, nil
+func makeHosts(data []byte) (*Service, error) {
+	if data == nil || len(data) == 0 {
+		return &Service{Hosts: make([]Host, 0)}, nil
 	}
 
 	var eps endpoints
-	err = json.NewDecoder(resp.Body).Decode(&eps)
+	err := json.Unmarshal(data, &eps)
 	if err != nil {
 		return nil, err
 	}
@@ -90,9 +62,18 @@ func getService(kubeProxyEndpoint string, namespace string, name string) (*Servi
 	// port found on the Kubernetes endpoint.
 	// Open questions around named ports and services with multiple ports.
 	subset := eps.Subsets[0]
+	hosts := make([]Host, 0)
 	for _, address := range subset.Addresses {
 		hosts = append(hosts, Host{IPAddress: address.IP, Port: subset.Ports[0].Port})
 	}
 
 	return &Service{Hosts: hosts}, nil
+}
+
+func serviceFromURL(path string) string {
+	s := strings.Split(path, "/")
+	if len(s) < 3 {
+		return ""
+	}
+	return s[3]
 }
