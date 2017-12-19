@@ -11,7 +11,6 @@ import (
 )
 
 func marshallData(result interface{}, w http.ResponseWriter, r *http.Request) {
-
 	data, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
 		log.Printf("verbose error info: %#v", err)
@@ -24,6 +23,8 @@ func marshallData(result interface{}, w http.ResponseWriter, r *http.Request) {
 func makeRequest(path, kubeProxyEndpoint, namespace, serviceLabelSelector string) ([]byte, error) {
 	query := url.Values{}
 	// Kinda hacky, but oh well...
+	// Doing this becasue we need to add a service name, otherwise
+	// it is just a query param
 	if endpointsPath == path {
 		path = fmt.Sprintf(path, namespace, serviceLabelSelector)
 	} else {
