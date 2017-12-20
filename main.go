@@ -47,13 +47,15 @@ type ServiceHandler struct {
 func (s *ServiceHandler) HandleClusters(w http.ResponseWriter, r *http.Request) {
 	data, err := makeRequest(servicesPath, s.KubeHost, s.Namespace, s.ServiceLabel)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Println("HandleClusters -> Make request -> ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	clusters, err := makeClusters(data)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Println("HandleClusters -> Make hosts -> ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	marshallData(clusters, w, r)
@@ -62,14 +64,15 @@ func (s *ServiceHandler) HandleClusters(w http.ResponseWriter, r *http.Request) 
 func (s *ServiceHandler) HandleRegistration(w http.ResponseWriter, r *http.Request) {
 	data, err := makeRequest(endpointsPath, s.KubeHost, s.Namespace, serviceFromURL(r.URL.Path))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Println("HandleRegistration -> Make request -> ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	hosts, err := makeHosts(data)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Println("HandleRegistration -> Make hosts -> ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	marshallData(hosts, w, r)
@@ -78,13 +81,15 @@ func (s *ServiceHandler) HandleRegistration(w http.ResponseWriter, r *http.Reque
 func (s *ServiceHandler) HandleRoutes(w http.ResponseWriter, r *http.Request) {
 	data, err := makeRequest(servicesPath, s.KubeHost, s.Namespace, s.ServiceLabel)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Println("HandleRoutes -> Make request -> ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	routes, err := makeRoutes(data)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Println("HandleRoutes -> Make hosts -> ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
