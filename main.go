@@ -24,20 +24,99 @@ const (
 )
 
 var (
-	httpAddr             string
-	kubeProxyEndpoint    string
-	serviceLabelSelector string
+	httpAddr string
 )
 
+func validateRequest(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		next(w, r)
+	})
+}
+
+type ServiceHandler struct {
+	Namespace    string
+	KubeHost     string
+	ServiceLabel string
+}
+
+func (s *ServiceHandler) HandleClusters(w http.ResponseWriter, r *http.Request) {
+	data, err := makeRequest(servicesPath, s.KubeHost, s.Namespace, s.ServiceLabel)
+	if err != nil {
+		log.Println("HandleClusters -> Make request -> ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	clusters, err := makeClusters(data)
+	if err != nil {
+		log.Println("HandleClusters -> Make hosts -> ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	marshallData(clusters, w, r)
+}
+
+func (s *ServiceHandler) HandleRegistration(w http.ResponseWriter, r *http.Request) {
+	data, err := makeRequest(endpointsPath, s.KubeHost, s.Namespace, serviceFromURL(r.URL.Path))
+	if err != nil {
+		log.Println("HandleRegistration -> Make request -> ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	hosts, err := makeHosts(data)
+	if err != nil {
+		log.Println("HandleRegistration -> Make hosts -> ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	marshallData(hosts, w, r)
+}
+
+func (s *ServiceHandler) HandleRoutes(w http.ResponseWriter, r *http.Request) {
+	data, err := makeRequest(servicesPath, s.KubeHost, s.Namespace, s.ServiceLabel)
+	if err != nil {
+		log.Println("HandleRoutes -> Make request -> ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	routes, err := makeRoutes(data)
+	if err != nil {
+		log.Println("HandleRoutes -> Make hosts -> ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	marshallData(routes, w, r)
+}
+
+func createHandlers(s ServiceHandler) *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/v1/clusters/", validateRequest(s.HandleClusters))
+	mux.HandleFunc("/v1/registration/", validateRequest(s.HandleRegistration))
+	mux.HandleFunc("/v1/routes/", validateRequest(s.HandleRoutes))
+
+	return mux
+}
+
 func main() {
+	s := ServiceHandler{}
+
 	flag.StringVar(&httpAddr, "http", "127.0.0.1:8080", "The HTTP listen address")
-	flag.StringVar(&kubeProxyEndpoint, "kube-proxy-endpoint", "127.0.0.1:9090", "A kubectl reverse-proxy URL")
-	flag.StringVar(&serviceLabelSelector, "service-label-selector", "envoyTier=ingress", "The label selector to filter services for CDS")
+	flag.StringVar(&s.KubeHost, "kube-proxy-endpoint", "127.0.0.1:9090", "A kubectl reverse-proxy URL")
+	flag.StringVar(&s.ServiceLabel, "service-label-selector", "envoyTier=ingress", "The label selector to filter services for CDS")
 	flag.Parse()
 
 	// POD_NAMESPACE env var should be set in container spec via downward API
-	namespace := os.Getenv("POD_NAMESPACE")
-	if namespace == "" {
+	s.Namespace = os.Getenv("POD_NAMESPACE")
+	if s.Namespace == "" {
 		log.Println("POD_NAMESPACE must be set in environment")
 		os.Exit(2)
 	}
@@ -45,8 +124,6 @@ func main() {
 	log.Println("Starting the Kubernetes Envoy Discovery Service...")
 	log.Printf("Listening on %s...", httpAddr)
 
-	http.Handle("/v1/clusters/", clusterServer(kubeProxyEndpoint, namespace, serviceLabelSelector))
-	http.Handle("/v1/registration/", registrationServer(kubeProxyEndpoint, namespace))
-	http.Handle("/v1/routes/", routeServer(kubeProxyEndpoint, namespace, serviceLabelSelector))
-	log.Fatal(http.ListenAndServe(httpAddr, nil))
+	mux := createHandlers(s)
+	log.Fatal(http.ListenAndServe(httpAddr, mux))
 }

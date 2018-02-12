@@ -11,13 +11,7 @@
 
 package main
 
-import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"net/url"
-)
+import "encoding/json"
 
 type Services struct {
 	// A list of clusters that will be dynamically added/modified within the cluster manager
@@ -45,39 +39,14 @@ type Cluster struct {
 	Features string `json:"features,omitempty"`
 }
 
-func getServices(kubeProxyEndpoint string, namespace string, serviceLabelSelector string) (*Services, error) {
-	path := fmt.Sprintf(servicesPath, namespace)
-	query := url.Values{}
-	query.Set("labelSelector", serviceLabelSelector)
-
-	r := &http.Request{
-		Header: make(http.Header),
-		Method: http.MethodGet,
-		URL: &url.URL{
-			Host:     kubeProxyEndpoint,
-			Path:     path,
-			Scheme:   "http",
-			RawQuery: query.Encode(),
-		},
-	}
-
-	r.Header.Set("Accept", "application/json, */*")
-
-	ctx := context.Background()
-	resp, err := http.DefaultClient.Do(r.WithContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	clusters := make([]Cluster, 0)
-
+func makeClusters(data []byte) (*Services, error) {
 	var cs services
-	err = json.NewDecoder(resp.Body).Decode(&cs)
+	err := json.Unmarshal(data, &cs)
 	if err != nil {
 		return nil, err
 	}
 
+	clusters := make([]Cluster, 0, len(cs.Items))
 	for _, item := range cs.Items {
 		// TODO Extract the literal values below into flags and constants
 		clusters = append(clusters, Cluster{
@@ -89,6 +58,5 @@ func getServices(kubeProxyEndpoint string, namespace string, serviceLabelSelecto
 			Features:         "http2",
 		})
 	}
-
 	return &Services{Clusters: clusters}, nil
 }
